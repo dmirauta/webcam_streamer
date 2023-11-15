@@ -1,3 +1,5 @@
+//! Local test
+
 use eframe::NativeOptions;
 use egui::{CentralPanel, ColorImage, Image, TextureHandle};
 use v4l::buffer::Type;
@@ -51,7 +53,7 @@ impl<'a> eframe::App for App<'a> {
         let cimage = ColorImage::from_rgb([self.width, self.height], self.rgb.as_slice());
         let handle: &mut egui::TextureHandle = self
             .texture
-            .get_or_insert_with(|| ctx.load_texture("fractal", cimage, Default::default()));
+            .get_or_insert_with(|| ctx.load_texture("frame", cimage, Default::default()));
 
         let (buf, _meta) = self.stream.next().unwrap();
         // println!(
