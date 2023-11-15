@@ -13,6 +13,7 @@ name = "client"
 path = "src/client.rs"
 
 [dependencies]
+chrono = "0.4.31"
 eframe = "0.23.0"
 egui = "0.23.0"
 ndarray = "0.15.6"

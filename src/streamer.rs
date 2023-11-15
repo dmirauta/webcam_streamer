@@ -8,12 +8,16 @@ use v4l::prelude::*;
 use v4l::video::Capture;
 use v4l::{Device, FourCC};
 
+use crate::shared::{make_secret, tprint};
+
+mod shared;
+
 fn send_frame(
     tcp_stream: &mut TcpStream,
     vid_stream: &mut MmapStream,
 ) -> Result<(), Box<dyn Error>> {
     let (buf, _meta) = vid_stream.next()?;
-    println!("sending {}", buf.len());
+    tprint(format!("sending {}", buf.len()));
     tcp_stream.write_all(buf)?;
     Ok(())
 }
@@ -26,10 +30,10 @@ fn handle_client(
     let mut data = vec![0; 40];
     tcp_stream.read_exact(&mut data)?;
     if *data.as_slice() == *secret {
-        println!("accepted");
+        tprint("accepted");
         while let Ok(()) = send_frame(tcp_stream, vid_stream) {}
     } else {
-        println!("didn't know secret, dropping")
+        tprint("declined")
     }
     tcp_stream.shutdown(Shutdown::Both)?;
     Ok(())
@@ -40,26 +44,13 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
     let port: usize = args[1].parse().unwrap();
-    let secret_str = args[2].clone();
-    let mut secret = vec![0u8; 40];
-
-    let n = secret_str.as_bytes().len();
-    if n <= 0 {
-        secret[..n].copy_from_slice(secret_str.as_bytes());
-    }
-
-    let width = 640usize;
-    let height = 480usize;
-    let addr = match local {
-        true => format!("127.0.0.1:{port}"),
-        false => format!("0.0.0.0:{port}"),
-    };
+    let secret = make_secret(args[2].clone());
 
     let mut dev = Device::new(0).expect("Failed to open device");
     let mut fmt = dev.format().unwrap();
 
-    fmt.width = width as u32;
-    fmt.height = height as u32;
+    fmt.width = 640;
+    fmt.height = 480;
     fmt.fourcc = FourCC::new(b"YUYV");
     let fmt = dev.set_format(&fmt).expect("Failed to write format");
     dbg!(&fmt);
@@ -67,18 +58,22 @@ fn main() {
     let mut vid_stream = MmapStream::with_buffers(&mut dev, Type::VideoCapture, 4)
         .expect("Failed to create buffer stream");
 
+    let addr = match local {
+        true => format!("127.0.0.1:{port}"),
+        false => format!("0.0.0.0:{port}"),
+    };
     let listener = TcpListener::bind(addr).unwrap();
-    println!("Server listening on port {port}");
+    tprint("Server listening on port {port}");
     for tcp_stream in listener.incoming() {
         match tcp_stream {
             Ok(mut tcp_stream) => {
-                println!("Serving: {}", tcp_stream.peer_addr().unwrap());
+                tprint(format!("Serving: {}", tcp_stream.peer_addr().unwrap()));
                 // no threads, will handle one connection at a time
                 let _ = handle_client(&mut tcp_stream, &mut vid_stream, &secret);
-                println!("Waiting");
+                tprint("Waiting");
             }
             Err(e) => {
-                println!("Error: {}", e);
+                tprint(format!("Error: {}", e));
                 /* connection failed */
             }
         }

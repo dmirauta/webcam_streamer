@@ -4,9 +4,11 @@ use std::env;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 
+use crate::shared::{make_secret, tprint};
 use eframe::NativeOptions;
 use egui::{CentralPanel, ColorImage, Image, TextureHandle};
 
+mod shared;
 mod yuyv2rgb;
 
 struct App {
@@ -19,7 +21,7 @@ struct App {
 impl App {
     fn new(addr: String, secret: Vec<u8>) -> Self {
         let mut stream = TcpStream::connect(addr).unwrap();
-        println!("Successfully connected to server in port 3333");
+        tprint("Successfully connected to server");
         stream.write_all(secret.as_slice()).unwrap();
         stream.flush().unwrap();
         Self {
@@ -38,30 +40,26 @@ impl eframe::App for App {
             ctx.load_texture("frame", cimage, Default::default())
         });
 
-        println!("reading, expecting {}", self.buf.len());
+        tprint(format!("reading, expecting {}", self.buf.len()));
         self.stream.read_exact(self.buf.as_mut_slice()).unwrap();
-        println!("decoding");
+        tprint("decoding");
         yuyv2rgb::yuv422_to_rgb24(self.buf.as_slice(), self.rgb.as_mut_slice());
-        println!("drawing");
+        tprint("drawing");
 
         CentralPanel::default().show(ctx, |ui| {
             let cimage = ColorImage::from_rgb([640, 480], self.rgb.as_slice());
             handle.set(cimage, Default::default());
             ui.add(Image::new(&*handle).shrink_to_fit());
         });
+
+        ctx.request_repaint();
     }
 }
 
 fn main() -> eframe::Result<()> {
     let args: Vec<String> = env::args().collect();
     let addr = args[1].clone();
-    let secret_str = args[2].clone();
-    let mut secret = vec![0u8; 40];
-
-    let n = secret_str.as_bytes().len();
-    if n <= 0 {
-        secret[..n].copy_from_slice(secret_str.as_bytes());
-    }
+    let secret = make_secret(args[2].clone());
 
     eframe::run_native(
         "Streamed webcam test",

@@ -1,5 +1,6 @@
 //! Local test
 
+use chrono::{DateTime, Utc};
 use eframe::NativeOptions;
 use egui::{CentralPanel, ColorImage, Image, TextureHandle};
 use v4l::buffer::Type;
@@ -50,10 +51,10 @@ impl<'a> App<'a> {
 
 impl<'a> eframe::App for App<'a> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let cimage = ColorImage::from_rgb([self.width, self.height], self.rgb.as_slice());
-        let handle: &mut egui::TextureHandle = self
-            .texture
-            .get_or_insert_with(|| ctx.load_texture("frame", cimage, Default::default()));
+        let handle: &mut egui::TextureHandle = self.texture.get_or_insert_with(|| {
+            let cimage = ColorImage::from_rgb([self.width, self.height], self.rgb.as_slice());
+            ctx.load_texture("frame", cimage, Default::default())
+        });
 
         let (buf, _meta) = self.stream.next().unwrap();
         // println!(
@@ -68,8 +69,14 @@ impl<'a> eframe::App for App<'a> {
         CentralPanel::default().show(ctx, |ui| {
             let cimage = ColorImage::from_rgb([self.width, self.height], self.rgb.as_slice());
             handle.set(cimage, Default::default());
+
+            let now: DateTime<Utc> = Utc::now();
+            let now = now.format("%H:%M:%S:%.3f").to_string();
+            ui.label(now.as_str());
             ui.add(Image::new(&*handle).shrink_to_fit());
         });
+
+        ctx.request_repaint();
     }
 }
 

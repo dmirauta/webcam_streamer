@@ -1,7 +1,6 @@
+//! Source:
+//! https://gist.github.com/arifd/ea820ec97265a023e67a88b66955855d
 #![allow(dead_code)]
-
-// Copied from
-// https://gist.github.com/arifd/ea820ec97265a023e67a88b66955855d
 
 use ndarray::{array, Array2};
 use rayon::prelude::*;
