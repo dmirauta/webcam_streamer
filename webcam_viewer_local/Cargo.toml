@@ -1,0 +1,13 @@
+[package]
+name = "webcam_viewer_local"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+webcam_viewer = { path = "..", features = ["yuyv2rgb"] }
+chrono = "0.4.31"
+eframe = "0.23.0"
+egui = "0.23.0"
+v4l = "0.14.0"

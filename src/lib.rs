@@ -1,5 +1,8 @@
 use chrono::{DateTime, Utc};
 
+#[cfg(feature = "yuyv2rgb")]
+pub mod yuyv2rgb;
+
 pub fn make_secret(secret_str: String) -> Vec<u8> {
     let mut secret = vec![0u8; 40];
 

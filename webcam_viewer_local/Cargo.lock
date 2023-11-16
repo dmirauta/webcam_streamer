@@ -2764,42 +2764,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "webcam_viewer"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "ndarray",
- "rayon",
-]
-
-[[package]]
-name = "webcam_viewer_client"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "egui",
- "ndarray",
- "rayon",
- "webcam_viewer",
-]
-
-[[package]]
 name = "webcam_viewer_local"
 version = "0.1.0"
 dependencies = [
  "chrono",
  "eframe",
  "egui",
+ "ndarray",
+ "rayon",
  "v4l",
- "webcam_viewer",
-]
-
-[[package]]
-name = "webcam_viewer_streamer"
-version = "0.1.0"
-dependencies = [
- "v4l",
- "webcam_viewer",
 ]
 
 [[package]]

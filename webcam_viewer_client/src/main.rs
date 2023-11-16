@@ -1,15 +1,11 @@
-//! Local test
-
 use std::env;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 
-use crate::shared::{make_secret, tprint};
 use eframe::NativeOptions;
 use egui::{CentralPanel, ColorImage, Image, TextureHandle};
-
-mod shared;
-mod yuyv2rgb;
+use webcam_viewer::yuyv2rgb::yuv422_to_rgb24;
+use webcam_viewer::{make_secret, tprint};
 
 struct App {
     stream: TcpStream,
@@ -43,7 +39,7 @@ impl eframe::App for App {
         tprint(format!("reading, expecting {}", self.buf.len()));
         self.stream.read_exact(self.buf.as_mut_slice()).unwrap();
         tprint("decoding");
-        yuyv2rgb::yuv422_to_rgb24(self.buf.as_slice(), self.rgb.as_mut_slice());
+        yuv422_to_rgb24(self.buf.as_slice(), self.rgb.as_mut_slice());
         tprint("drawing");
 
         CentralPanel::default().show(ctx, |ui| {

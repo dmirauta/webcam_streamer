@@ -8,8 +8,7 @@ use v4l::io::traits::CaptureStream;
 use v4l::video::Capture;
 use v4l::{prelude::*, Format};
 use v4l::{Device, FourCC};
-
-mod yuyv2rgb;
+use webcam_viewer::yuyv2rgb::yuv422_to_rgb24;
 
 #[allow(dead_code)]
 struct App<'a> {
@@ -26,11 +25,8 @@ impl<'a> App<'a> {
     fn new(width: usize, height: usize) -> Self {
         // TODO: Dev select?
         let mut dev = Device::new(0).expect("Failed to open device");
-        let mut fmt = dev.format().unwrap();
 
-        fmt.width = width as u32;
-        fmt.height = height as u32;
-        fmt.fourcc = FourCC::new(b"YUYV");
+        let fmt = Format::new(640, 480, FourCC::new(b"YUYV"));
         let fmt = dev.set_format(&fmt).expect("Failed to write format");
         dbg!(&fmt);
 
@@ -64,7 +60,7 @@ impl<'a> eframe::App for App<'a> {
         //     meta.timestamp
         // );
 
-        yuyv2rgb::yuv422_to_rgb24(buf, &mut self.rgb.as_mut_slice());
+        yuv422_to_rgb24(buf, &mut self.rgb.as_mut_slice());
 
         CentralPanel::default().show(ctx, |ui| {
             let cimage = ColorImage::from_rgb([self.width, self.height], self.rgb.as_slice());
