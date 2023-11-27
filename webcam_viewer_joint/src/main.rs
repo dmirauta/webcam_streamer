@@ -1,4 +1,4 @@
-//! Local test
+//! Single app (no streamer/client) test
 
 use chrono::{DateTime, Utc};
 use eframe::NativeOptions;

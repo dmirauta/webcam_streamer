@@ -7,7 +7,7 @@ use v4l::video::Capture;
 use v4l::{prelude::*, Format};
 use v4l::{Device, FourCC};
 
-use webcam_viewer::{make_secret, tprint};
+use webcam_viewer::{make_secret, tprint, HEIGHT, SECRET_SIZE, WIDTH};
 
 enum FrameError {
     Vid,
@@ -26,11 +26,12 @@ fn send_frame(tcp_stream: &mut TcpStream, vid_stream: &mut MmapStream) -> Result
 fn handle_client(
     tcp_stream: &mut TcpStream,
     vid_stream: &mut MmapStream,
-    secret: &Vec<u8>,
+    secret_bytes: &Vec<u8>,
 ) -> io::Result<()> {
-    let mut data = vec![0; 40];
+    tprint(format!("Serving: {}", tcp_stream.peer_addr().unwrap()));
+    let mut data = vec![0; SECRET_SIZE];
     tcp_stream.read_exact(&mut data)?;
-    if *data.as_slice() == *secret {
+    if *data.as_slice() == *secret_bytes {
         tprint("accepted");
         loop {
             match send_frame(tcp_stream, vid_stream) {
@@ -48,20 +49,28 @@ fn handle_client(
 }
 
 fn main() {
+    // TODO: make cli or build option?
     let local: bool = false;
 
     let args: Vec<String> = env::args().collect();
-    let dev_id: usize = args[1].parse().unwrap();
-    let port: usize = args[2].parse().unwrap();
-    let secret = make_secret(args[3].clone());
-    dbg!(&dev_id, &port);
+    let dev_id: usize = args.get(1).unwrap_or(&"0".to_string()).parse().unwrap();
+    let port: usize = args.get(2).unwrap_or(&"3333".to_string()).parse().unwrap();
+    let secret_bytes = match args.get(3) {
+        Some(string) => make_secret(string.clone()),
+        None => {
+            println!("USING DEFAULT SECRET \"TEST\" (Should change)");
+            make_secret("TEST".to_string())
+        }
+    };
 
     let mut dev = Device::new(dev_id).expect("Failed to open device");
-    dbg!(dev.enum_formats().unwrap());
+    // dbg!(dev.enum_formats().unwrap());
 
-    let fmt = Format::new(640, 480, FourCC::new(b"YUYV"));
-    let fmt = dev.set_format(&fmt).expect("Failed to write format");
-    dbg!(&fmt);
+    // TODO: Could request in RGB (rather than converting later), but yuyv is more commonly
+    // supported?
+    let fmt = Format::new(WIDTH as u32, HEIGHT as u32, FourCC::new(b"YUYV"));
+    let _fmt = dev.set_format(&fmt).expect("Failed to write format");
+    // dbg!(&_fmt);
 
     let mut vid_stream = MmapStream::with_buffers(&mut dev, Type::VideoCapture, 4)
         .expect("Failed to create buffer stream");
@@ -71,19 +80,19 @@ fn main() {
         false => format!("0.0.0.0:{port}"),
     };
     let listener = TcpListener::bind(addr).unwrap();
-    tprint("Server listening on port {port}");
+    tprint(format!(
+        "Server listening on port {port}, will serve frames from /dev/video{dev_id}"
+    ));
     for tcp_stream in listener.incoming() {
         match tcp_stream {
             Ok(mut tcp_stream) => {
-                tprint(format!("Serving: {}", tcp_stream.peer_addr().unwrap()));
                 // no threads, will handle one connection at a time, exit server on panic
-                let _ = handle_client(&mut tcp_stream, &mut vid_stream, &secret);
-                tprint("Waiting");
+                let _ = handle_client(&mut tcp_stream, &mut vid_stream, &secret_bytes);
             }
             Err(e) => {
                 tprint(format!("Error: {}", e));
-                /* connection failed */
             }
         }
+        tprint("Waiting");
     }
 }

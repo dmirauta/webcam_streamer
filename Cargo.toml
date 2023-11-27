@@ -17,5 +17,5 @@ yuyv2rgb = ["ndarray", "rayon"]
 members = [
   "webcam_viewer_client",
   "webcam_viewer_streamer",
-  "webcam_viewer_local",
+  "webcam_viewer_joint",
 ]
