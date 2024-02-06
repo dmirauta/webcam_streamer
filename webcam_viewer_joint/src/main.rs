@@ -8,7 +8,7 @@ use v4l::io::traits::CaptureStream;
 use v4l::video::Capture;
 use v4l::{prelude::*, Format};
 use v4l::{Device, FourCC};
-use webcam_viewer::yuyv2rgb::yuv422_to_rgb24;
+use webcam_viewer_base::yuyv2rgb::yuv422_to_rgb24;
 
 #[allow(dead_code)]
 struct App<'a> {

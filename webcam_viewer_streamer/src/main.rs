@@ -1,13 +1,14 @@
+use clap::Parser;
+use std::io;
 use std::io::{Read, Write};
 use std::net::{Shutdown, TcpListener, TcpStream};
-use std::{env, io};
 use v4l::buffer::Type;
 use v4l::io::traits::CaptureStream;
 use v4l::video::Capture;
 use v4l::{prelude::*, Format};
 use v4l::{Device, FourCC};
 
-use webcam_viewer::{make_secret, tprint, HEIGHT, SECRET_SIZE, WIDTH};
+use webcam_viewer_base::{make_secret, tprint, HEIGHT, SECRET_SIZE, WIDTH};
 
 enum FrameError {
     Vid,
@@ -48,17 +49,48 @@ fn handle_client(
     Ok(())
 }
 
-fn main() {
-    // TODO: make cli or build option?
-    let local: bool = false;
+#[derive(Clone, Debug)]
+struct Ip {
+    addr: [u8; 4],
+}
 
-    let args: Vec<String> = env::args().collect();
-    let dev_id: usize = args.get(1).unwrap_or(&"0".to_string()).parse().unwrap();
-    let port: usize = args.get(2).unwrap_or(&"3333".to_string()).parse().unwrap();
-    let secret_bytes = match args.get(3) {
+impl From<String> for Ip {
+    fn from(value: String) -> Self {
+        let values: Vec<u8> = value
+            .split(".")
+            .map(|s| s.parse().expect("Not (u8) integer value."))
+            .collect();
+        if values.len() < 4 {
+            panic!("Not enough values.");
+        }
+        Self {
+            addr: [values[0], values[1], values[2], values[3]],
+        }
+    }
+}
+
+#[derive(Parser)]
+struct MyArgs {
+    #[arg(short, long)]
+    /// V4l device id, as appears in /dev/video<dev_id>
+    dev_id: Option<usize>,
+    #[arg(short, long)]
+    ip: Option<Ip>,
+    #[arg(short, long)]
+    port: Option<usize>,
+    #[arg(short, long)]
+    secret: Option<String>,
+}
+
+fn main() {
+    let args = MyArgs::parse();
+
+    let dev_id = args.dev_id.unwrap_or(0);
+    let port = args.port.unwrap_or(3333);
+    let secret_bytes = match args.secret {
         Some(string) => make_secret(string.clone()),
         None => {
-            println!("USING DEFAULT SECRET \"TEST\" (Should change)");
+            tprint("USING DEFAULT SECRET \"TEST\" (Should change)");
             make_secret("TEST".to_string())
         }
     };
@@ -75,13 +107,13 @@ fn main() {
     let mut vid_stream = MmapStream::with_buffers(&mut dev, Type::VideoCapture, 4)
         .expect("Failed to create buffer stream");
 
-    let addr = match local {
-        true => format!("127.0.0.1:{port}"),
-        false => format!("0.0.0.0:{port}"),
+    let addr = match args.ip {
+        Some(Ip { addr: [a, b, c, d] }) => format!("{a}.{b}.{c}.{d}:{port}"),
+        None => format!("127.0.0.1:{port}"),
     };
-    let listener = TcpListener::bind(addr).unwrap();
+    let listener = TcpListener::bind(addr.clone()).unwrap();
     tprint(format!(
-        "Server listening on port {port}, will serve frames from /dev/video{dev_id}"
+        "Server listening on {addr}, will serve frames from /dev/video{dev_id}"
     ));
     for tcp_stream in listener.incoming() {
         match tcp_stream {

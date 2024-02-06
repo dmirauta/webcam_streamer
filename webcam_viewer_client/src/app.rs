@@ -4,8 +4,8 @@ use std::net::TcpStream;
 use eframe::CreationContext;
 use egui::{CentralPanel, ColorImage, Image, TextureHandle};
 use egui_inspect::EguiInspect;
-use webcam_viewer::yuyv2rgb::yuv422_to_rgb24;
-use webcam_viewer::{make_secret, tprint, HEIGHT, WIDTH};
+use webcam_viewer_base::yuyv2rgb::yuv422_to_rgb24;
+use webcam_viewer_base::{make_secret, tprint, HEIGHT, WIDTH};
 
 #[derive(EguiInspect)]
 pub struct LoginData {

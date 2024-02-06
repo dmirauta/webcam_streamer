@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-webcam_viewer = { path = "..", features = ["yuyv2rgb"] }
+webcam_viewer_base = { path = "../webcam_viewer_base", features = ["yuyv2rgb"] }
 eframe = { version = "0.24", default-features = false, features = [
   "glow",
   "default_fonts",
